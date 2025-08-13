@@ -14,6 +14,11 @@ class Main
 
     }
 
+    public function getIp()
+    {
+        
+    }
+
     protected function log($file, $message)
     {
         file_put_contents($file, '[' . date('Y-m-d H:i:s') . '] ' . $message . "\n", FILE_APPEND);
