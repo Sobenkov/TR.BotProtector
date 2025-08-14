@@ -41,13 +41,24 @@ class Main
         // Регулярка для технических ботов
         $is_tech_bot = preg_match("~(Google|Lighthouse|Yahoo|Rambler|Bot|Yandex|Spider|Snoopy|Crawler|Finder|Mail|curl)~i", $ua);
 
+        // временное решение, принудительная блокировка для тестов
+        $blacklist = [
+            '192.168.0.1',
+            '203.0.113.45',
+            '84.42.72.30'
+        ];
+
+
         // === Часть 1: проверка по IP (не бот по UA) ===
         if (!$is_tech_bot) {
-            // IP в blacklist
+            // Проверка по API, если нет в whitelist
             if (in_array($ip, $blocked_ip)) {
                 $this->denyAccess();
             }
-            // Проверка по API, если нет в whitelist
+            // IP в blacklist
+            if (in_array($ip, $blacklist)) {
+                $this->denyAccess();
+            }
             elseif (!in_array($ip, $good_ip)) {
                 $jsonIpData = @file_get_contents("http://ip-api.com/json/{$ip}?fields=status,isp,org,as,country,query");
                 $jsonIpData = @json_decode($jsonIpData, true);
@@ -72,6 +83,48 @@ class Main
 
         // === Часть 2: учёт и блокировка известных ботов ===
         $botName = $this->detectBot($ua, $searchBots);
+
+        if ($botName) {
+            $botData = $this->loadArray($botStatsFile);
+            $now = time();
+
+            if (isset($botData[$botName])) {
+                $realtime = $now - $botData[$botName]['start_time'];
+
+                if (empty($botData[$botName]['blocked_time'])) {
+                    if ($realtime < $directValue) {
+                        $botData[$botName]['count']++;
+                    } else {
+                        $botData[$botName]['start_time'] = $now;
+                        $botData[$botName]['count'] = 1;
+                    }
+                } elseif (($now - $botData[$botName]['blocked_time']) > $timeValue) {
+                    $botData[$botName]['start_time'] = $now;
+                    $botData[$botName]['count'] = 1;
+                    $botData[$botName]['blocked_time'] = '';
+                }
+            } else {
+                $botData[$botName] = [
+                    'start_time' => $now,
+                    'count' => 1,
+                    'blocked_time' => '',
+                ];
+            }
+
+            if (
+                $botData[$botName]['count'] > $limitValue ||
+                (!empty($botData[$botName]['blocked_time']) && ($now - $botData[$botName]['blocked_time']) < $timeValue)
+            ) {
+                if (empty($botData[$botName]['blocked_time'])) {
+                    $botData[$botName]['blocked_time'] = $now;
+                    $this->saveArray($botStatsFile, $botData);
+                    $this->log($logFile, "The {$botName} was blocked for {$timeValue} sec");
+                }
+                $this->denyAccess();
+            }
+
+            $this->saveArray($botStatsFile, $botData);
+        }
     }
 
     public function getIp()
