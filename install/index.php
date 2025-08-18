@@ -36,12 +36,11 @@ class tr_botprotector extends CModule
 
     public function InstallDB()
     {
-        // Регистрируем обработчик события
         RegisterModuleDependences(
             "main",
-            "OnBeforeProlog",
+            "OnProlog",
             $this->MODULE_ID,
-            "\\TR\\BotProtector\\Main",
+            "TR\\BotProtector\\Main",
             "checkVisitor"
         );
         return true;
@@ -54,12 +53,11 @@ class tr_botprotector extends CModule
 
     public function UninstallDB()
     {
-        // Снимаем обработчик события
         UnRegisterModuleDependences(
             "main",
-            "OnBeforeProlog",
+            "OnProlog",
             $this->MODULE_ID,
-            "\\TR\\BotProtector\\Main",
+            "TR\\BotProtector\\Main",
             "checkVisitor"
         );
         return true;
