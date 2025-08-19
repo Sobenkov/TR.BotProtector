@@ -12,13 +12,13 @@ class Main
     public static function checkVisitor()
     {
         // Проверяем, включен ли модуль в настройках
-        $enabled = Option::get($this->moduleId, 'enabled', 'Y');
+        $enabled = Option::get(self::$moduleId, 'enabled', 'Y');
         if ($enabled !== 'Y') {
             return;
         }
 
         $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-        $ip = $this->getIp();
+        $ip = self::getIp();
 
         // Путь к данным
         $dataDir = $_SERVER['DOCUMENT_ROOT'] . '/upload/botprotector/';
@@ -29,52 +29,86 @@ class Main
         $botStatsFile = $dataDir . 'bots.php';
         $logFile = $dataDir . 'botprotector.log';
 
-        $blocked_ip = self::loadArray($blockedIpFile);
-        $good_ip = self::loadArray($goodIpFile);
+        $blockedIp = self::loadArray($blockedIpFile);
+        $goodIp = self::loadArray($goodIpFile);
 
-        $searchBots   = $botsValue ? array_map('trim', explode(',', $botsValue)) : [
-            'YandexAdNet', 'YandexDirect', 'YaDirectFetcher', 'YandexMarket',
-            'YandexMetrika', 'YandexRCA', 'YandexRenderResourcesBot', 'YandexSearchShop',
-            'YandexWebmaster', 'Lighthouse', 'YandexBot', 'Yandex', 'Google',
-        ];
+        // $searchBots   = $botsValue ? array_map('trim', explode(',', $botsValue)) : [
+        //     'YandexAdNet', 'YandexDirect', 'YaDirectFetcher', 'YandexMarket',
+        //     'YandexMetrika', 'YandexRCA', 'YandexRenderResourcesBot', 'YandexSearchShop',
+        //     'YandexWebmaster', 'Lighthouse', 'YandexBot', 'Yandex', 'Google',
+        // ];
+
+        // Читаем настройки
+        $searchBots   = Option::get(self::$moduleId, 'search_bots', "YandexBot, GoogleBot, BingBot, YandexAdNet, YandexDirect, YaDirectFetcher, YandexMarket, YandexMetrika, YandexRCA, YandexRenderResourcesBot, YandexSearchShop, YandexWebmaster, Lighthouse, Yandex, Google");
+        $searchBots   = array_map('trim', explode(',', $searchBots));
+
+        $limitValue   = (int) Option::get(self::$moduleId, 'limit_value', 10);
+        $timeValue    = (int) Option::get(self::$moduleId, 'time_value', 3600);
+        $directValue  = (int) Option::get(self::$moduleId, 'direct_value', 60);
+
+        $customGoodIp    = preg_split('/\r\n|\r|\n/', Option::get(self::$moduleId, 'goodIp', ''));
+        $customBlockedIp = preg_split('/\r\n|\r|\n/', Option::get(self::$moduleId, 'blockedIp', ''));
+
+        $customGoodIp    = array_filter(array_map('trim', $customGoodIp));
+        $customBlockedIp = array_filter(array_map('trim', $customBlockedIp));
 
         // Регулярка для технических ботов
-        $is_tech_bot = preg_match("~(Google|Lighthouse|Yahoo|Rambler|Bot|Yandex|Spider|Snoopy|Crawler|Finder|Mail|curl)~i", $ua);
+        $isTechBot = preg_match("~(Google|Lighthouse|Yahoo|Rambler|Bot|Yandex|Spider|Snoopy|Crawler|Finder|Mail|curl)~i", $ua);
 
         // временное решение, принудительная блокировка для тестов
         // $blacklist = ['192.168.0.1','203.0.113.45'];
 
 
         // === Часть 1: проверка по IP (не бот по UA) ===
-        if (!$is_tech_bot) {
-            // Проверка по API, если нет в whitelist
-            if (in_array($ip, $blocked_ip)) {
-                self::denyAccess();
-            }
-            // IP в blacklist
-            // if (in_array($ip, $blacklist)) {
-            //     $this->denyAccess();
-                
-            //     $this->log($logFile, "Тестовая блокировка прошла успешно.");
-            // }
-            elseif (!in_array($ip, $good_ip)) {
+        if (!$isTechBot) {
+            $state = 'unknown';
+
+            if (in_array($ip, $customBlockedIp) || in_array($ip, $blockedIp)) {
+                $state = 'blacklist';
+            } elseif (in_array($ip, $customGoodIp) || in_array($ip, $goodIp)) {
+                $state = 'whitelist';
+            } else {
                 $jsonIpData = @file_get_contents("http://ip-api.com/json/{$ip}?fields=status,isp,org,as,country,query");
                 $jsonIpData = @json_decode($jsonIpData, true);
+
                 if (is_array($jsonIpData)) {
                     if (
                         (isset($jsonIpData['isp']) && self::isBadProvider($jsonIpData['isp'])) ||
                         (isset($jsonIpData['org']) && self::isBadProvider($jsonIpData['org'])) ||
                         (isset($jsonIpData['as']) && self::isBadProvider($jsonIpData['as']))
                     ) {
-                        $blocked_ip[] = $ip;
-                        self::saveArray($blockedIpFile, $blocked_ip);
-                        self::log($logFile, "Бот {$jsonIpData['isp']} {$ip} заблокирован!");
-                        self::denyAccess();
+                        $state = 'bad_provider';
                     } else {
-                        $good_ip[] = $ip;
-                        self::saveArray($goodIpFile, $good_ip);
+                        $state = 'good_provider';
                     }
                 }
+            }
+            
+            switch ($state) {
+                case 'blacklist':
+                    self::log($logFile, "IP {$ip} в blacklist, доступ запрещен");
+                    self::denyAccess();
+                    break;
+
+                case 'whitelist':
+                    break;
+
+                case 'bad_provider':
+                    $blockedIp[] = $ip;
+                    self::saveArray($blockedIpFile, $blockedIp);
+                    self::log($logFile, "Бот {$ip} занесён в blacklist по данным API");
+                    self::denyAccess();
+                    break;
+
+                case 'good_provider':
+                    $goodIp[] = $ip;
+                    self::saveArray($goodIpFile, $goodIp);
+                    break;
+
+                case 'unknown':
+                default:
+                    self::log($logFile, "IP {$ip} не определён через API, пропускаем");
+                    break;
             }
         }
 
@@ -90,15 +124,13 @@ class Main
                 $realtime = $now - $botData[$botName]['start_time'];
 
                 if (empty($botData[$botName]['blocked_time'])) {
-                    // if ($realtime < $directValue) {
-                    if ($realtime < 60) { // directValue (пока фиксировано)
+                    if ($realtime < $directValue) {
                         $botData[$botName]['count']++;
                     } else {
                         $botData[$botName]['start_time'] = $now;
                         $botData[$botName]['count'] = 1;
                     }
-                // } elseif (($now - $botData[$botName]['blocked_time']) > $timeValue) {
-                } elseif (($now - $botData[$botName]['blocked_time']) > 3600) { // timeValue (пока фиксировано)
+                } elseif (($now - $botData[$botName]['blocked_time']) > $timeValue) {
                     $botData[$botName]['start_time'] = $now;
                     $botData[$botName]['count'] = 1;
                     $botData[$botName]['blocked_time'] = '';
@@ -112,10 +144,8 @@ class Main
             }
 
             if (
-                // $botData[$botName]['count'] > $limitValue ||
-                $botData[$botName]['count'] > 10 || // limitValue (пока фиксировано)
-                // (!empty($botData[$botName]['blocked_time']) && ($now - $botData[$botName]['blocked_time']) < $timeValue)
-                (!empty($botData[$botName]['blocked_time']) && ($now - $botData[$botName]['blocked_time']) < 3600)
+                $botData[$botName]['count'] > $limitValue ||
+                (!empty($botData[$botName]['blocked_time']) && ($now - $botData[$botName]['blocked_time']) < $timeValue)
             ) {
                 if (empty($botData[$botName]['blocked_time'])) {
                     $botData[$botName]['blocked_time'] = $now;
