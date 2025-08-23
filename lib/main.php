@@ -58,6 +58,14 @@ class Main
         if (!$isTechBot) {
             $state = 'unknown';
 
+<<<<<<< HEAD
+=======
+
+        // === Часть 1: проверка по IP (не бот по UA) ===
+        if (!$isTechBot) {
+            $state = 'unknown';
+
+>>>>>>> d090b740852cfd127de3e5934a8e2968a7035adc
             if (in_array($ip, $customBlockedIp) || in_array($ip, $blockedIp)) {
                 $state = 'blacklist';
             } elseif (in_array($ip, $customGoodIp) || in_array($ip, $goodIp)) {
