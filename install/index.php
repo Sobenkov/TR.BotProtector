@@ -1,6 +1,7 @@
 <?if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) die();
 
 use Bitrix\Main\ModuleManager;
+use Bitrix\Main\Application;
 
 class tr_botprotector extends CModule
 {
@@ -31,11 +32,33 @@ class tr_botprotector extends CModule
 
     public function InstallFiles()
     {
+        CopyDirFiles(
+            __DIR__."/admin/",
+            $_SERVER["DOCUMENT_ROOT"]."/bitrix/admin/",
+            true,
+            true
+        );
         return true;
     }
 
     public function InstallDB()
     {
+        $connection = Application::getConnection();
+        $sqlHelper = $connection->getSqlHelper();
+
+        if(!$connection->isTableExists("b_botprotector_log"))
+        {
+            $connection->queryExecute("
+                CREATE TABLE b_botprotector_log (
+                    ID INT AUTO_INCREMENT PRIMARY KEY,
+                    DATE_INSERT DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    IP VARCHAR(45) NOT NULL,
+                    USER_AGENT TEXT,
+                    REASON VARCHAR(255) NULL
+                )
+            ");
+        }
+
         RegisterModuleDependences(
             "main",
             "OnProlog",
@@ -48,11 +71,22 @@ class tr_botprotector extends CModule
 
     public function UninstallFiles()
     {
+        DeleteDirFiles(
+            __DIR__."/admin/",
+            $_SERVER["DOCUMENT_ROOT"]."/bitrix/admin/"
+        );
         return true;
     }
 
     public function UninstallDB()
     {
+        $connection = Application::getConnection();
+
+        if($connection->isTableExists("b_botprotector_log"))
+        {
+            $connection->queryExecute("DROP TABLE b_botprotector_log");
+        }
+
         UnRegisterModuleDependences(
             "main",
             "OnProlog",

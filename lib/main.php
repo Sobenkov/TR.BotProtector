@@ -54,9 +54,6 @@ class Main
 
         // Регулярка для технических ботов
         $isTechBot = preg_match("~(Google|Lighthouse|Yahoo|Rambler|Bot|Yandex|Spider|Snoopy|Crawler|Finder|Mail|curl)~i", $ua);
-
-        if (!$isTechBot) {
-            $state = 'unknown';
             
         // === Часть 1: проверка по IP (не бот по UA) ===
         if (!$isTechBot) {
@@ -86,6 +83,11 @@ class Main
             switch ($state) {
                 case 'blacklist':
                     self::log($logFile, "IP {$ip} в blacklist, доступ запрещен");
+                    BotBlockTable::add([
+                        'IP' => $ip,
+                        'USER_AGENT' => $ua,
+                        'REASON' => 'Blacklist',
+                    ]);
                     self::denyAccess();
                     break;
 
@@ -96,6 +98,11 @@ class Main
                     $blockedIp[] = $ip;
                     self::saveArray($blockedIpFile, $blockedIp);
                     self::log($logFile, "Бот {$ip} занесён в blacklist по данным API");
+                    BotBlockTable::add([
+                        'IP' => $ip,
+                        'USER_AGENT' => $ua,
+                        'REASON' => 'Bad provider',
+                    ]);
                     self::denyAccess();
                     break;
 
@@ -151,6 +158,11 @@ class Main
                     self::saveArray($botStatsFile, $botData);
                     self::log($logFile, "Бот {$botName} был заблокирован на {$timeValue} секунд.");
                 }
+                BotBlockTable::add([
+                    'IP' => $ip,
+                    'USER_AGENT' => $ua,
+                    'REASON' => 'Blocked settings',
+                ]);
                 self::denyAccess();
             }
 

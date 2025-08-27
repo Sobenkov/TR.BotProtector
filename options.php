@@ -80,7 +80,14 @@ $tabControl->BeginNextTab();
     <td>Окно анализа активности (секунд):</td>
     <td><input type="text" name="direct_value" size="5" value="<?=$directValue?>"></td>
 </tr>
-
+<tr class="heading"><td colspan="2">Управление заблокированными</td></tr>
+<tr>
+    <td colspan="2">
+        <a href="/bitrix/admin/tr_botprotector_blocked_list.php?lang=<?=LANG?>" class="adm-btn">
+            Перейти к списку заблокированных
+        </a>
+    </td>
+</tr>
 <?php
 $tabControl->Buttons();
 ?>
