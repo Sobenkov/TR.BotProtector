@@ -19,7 +19,7 @@
 ### Вариант 1. Через Git
 
 ```bash
-cd /path/to/bitrix/local/modules/
+cd /path/to/site/local/modules/
 git clone https://github.com/sobenkov/tr.botprotector.git tr.botprotector
 ```
 Установите модуль в админке:
