@@ -54,9 +54,6 @@ class Main
 
         // Регулярка для технических ботов
         $isTechBot = preg_match("~(Google|Lighthouse|Yahoo|Rambler|Bot|Yandex|Spider|Snoopy|Crawler|Finder|Mail|curl)~i", $ua);
-
-        if (!$isTechBot) {
-            $state = 'unknown';
             
         // === Часть 1: проверка по IP (не бот по UA) ===
         if (!$isTechBot) {
