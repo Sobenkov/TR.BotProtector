@@ -1,6 +1,6 @@
 <?php
 use Bitrix\Main\Loader;
-use TR\BotProtector\BlockedTable;
+use TR\BotProtector\BotProtectorTable;
 
 require_once $_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_admin_before.php";
 
@@ -10,7 +10,7 @@ $sTableID = "tbl_tr_botprotector_blocked";
 $oSort = new CAdminSorting($sTableID, "ID", "desc");
 $lAdmin = new CAdminList($sTableID, $oSort);
 
-$rsData = BlockedTable::getList([
+$rsData = BotProtectorTable::getList([
     'order' => ['ID' => 'DESC'],
 ]);
 $rsData = new CAdminResult($rsData, $sTableID);
