@@ -11,7 +11,6 @@ class Main
 
     public static function checkVisitor()
     {
-        // Проверяем, включен ли модуль в настройках
         $enabled = Option::get(self::$moduleId, 'enabled', 'Y');
         if ($enabled !== 'Y') {
             return;
