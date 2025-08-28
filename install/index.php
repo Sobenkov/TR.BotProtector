@@ -63,7 +63,7 @@ class tr_botprotector extends CModule
             "main",
             "OnProlog",
             $this->MODULE_ID,
-            "TR\\BotProtector\\Main",
+            "TR\\BotProtector\\main",
             "checkVisitor"
         );
         return true;
@@ -91,7 +91,7 @@ class tr_botprotector extends CModule
             "main",
             "OnProlog",
             $this->MODULE_ID,
-            "TR\\BotProtector\\Main",
+            "TR\\BotProtector\\main",
             "checkVisitor"
         );
         return true;
