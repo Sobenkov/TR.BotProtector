@@ -4,6 +4,7 @@ namespace TR\BotProtector;
 use Bitrix\Main\Config\Option;
 use Bitrix\Main\IO\File;
 use Bitrix\Main\IO\Directory;
+use Bitrix\Main\Diag\Debug;
 
 class Main
 {
@@ -75,7 +76,7 @@ class Main
             
             switch ($state) {
                 case 'blacklist':
-                    self::log($logFile, "IP {$ip} в blacklist, доступ запрещен");
+                    self::log("Blacklist", "IP {$ip} в blacklist, доступ запрещен");
                     BotBlockTable::add([
                         'IP' => $ip,
                         'USER_AGENT' => $ua,
@@ -90,7 +91,7 @@ class Main
                 case 'bad_provider':
                     $blockedIp[] = $ip;
                     self::saveArray($blockedIpFile, $blockedIp);
-                    self::log($logFile, "Бот {$ip} занесён в blacklist по данным API");
+                    self::log("Bad_provider", "Бот {$ip} занесён в blacklist по данным API");
                     BotBlockTable::add([
                         'IP' => $ip,
                         'USER_AGENT' => $ua,
@@ -106,7 +107,7 @@ class Main
 
                 case 'unknown':
                 default:
-                    self::log($logFile, "IP {$ip} не определён через API, пропускаем");
+                    self::log("Unknown", "IP {$ip} не определён через API, пропускаем");
                     break;
             }
         }
@@ -149,7 +150,7 @@ class Main
                 if (empty($botData[$botName]['blocked_time'])) {
                     $botData[$botName]['blocked_time'] = $now;
                     self::saveArray($botStatsFile, $botData);
-                    self::log($logFile, "Бот {$botName} был заблокирован на {$timeValue} секунд.");
+                    self::log("Blocked", "Бот {$botName} был заблокирован на {$timeValue} секунд.");
                 }
                 BotBlockTable::add([
                     'IP' => $ip,
@@ -187,9 +188,13 @@ class Main
         return '';
     }
 
-    protected static function log($file, $message)
+    protected static function log($title, $data)
     {
-        file_put_contents($file, '[' . date('Y-m-d H:i:s') . '] ' . $message . "\n", FILE_APPEND);
+        Debug::writeToFile(
+            $data,    
+            $title,     
+            '/upload/botprotector/botprotector.log'
+        );
     }
 
     protected static function denyAccess()
