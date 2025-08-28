@@ -32,12 +32,6 @@ class Main
         $blockedIp = self::loadArray($blockedIpFile);
         $goodIp = self::loadArray($goodIpFile);
 
-        // $searchBots   = $botsValue ? array_map('trim', explode(',', $botsValue)) : [
-        //     'YandexAdNet', 'YandexDirect', 'YaDirectFetcher', 'YandexMarket',
-        //     'YandexMetrika', 'YandexRCA', 'YandexRenderResourcesBot', 'YandexSearchShop',
-        //     'YandexWebmaster', 'Lighthouse', 'YandexBot', 'Yandex', 'Google',
-        // ];
-
         // Читаем настройки
         $searchBots   = Option::get(self::$moduleId, 'search_bots', "YandexBot, GoogleBot, BingBot, YandexAdNet, YandexDirect, YaDirectFetcher, YandexMarket, YandexMetrika, YandexRCA, YandexRenderResourcesBot, YandexSearchShop, YandexWebmaster, Lighthouse, Yandex, Google");
         $searchBots   = array_map('trim', explode(',', $searchBots));
