@@ -12,7 +12,7 @@ class tr_botprotector extends CModule
     public function __construct()
     {
         $this->PARTNER_NAME = "TR";
-        $this->MODULE_VERSION = "1.0.0";
+        $this->MODULE_VERSION = "1.0.1";
         $this->MODULE_VERSION_DATE = "2025-08-13";
     }
 
