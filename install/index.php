@@ -12,8 +12,8 @@ class tr_botprotector extends CModule
     public function __construct()
     {
         $this->PARTNER_NAME = "TR";
-        $this->MODULE_VERSION = "1.0.2";
-        $this->MODULE_VERSION_DATE = "2025-08-28";
+        $this->MODULE_VERSION = "1.1.0";
+        $this->MODULE_VERSION_DATE = "2025-09-05";
     }
 
     public function DoInstall()
